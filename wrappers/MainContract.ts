@@ -87,6 +87,27 @@ export class MainContract implements Contract {
     });
   }
 
+  async sendDeploy(provider: ContractProvider, via: Sender, value: bigint) {
+    await provider.internal(via, {
+      value,
+      sendMode: SendMode.PAY_GAS_SEPARATELY,
+      body: beginCell().storeUint(2, 32).endCell(),
+    });
+  }
+
+  async sendNoCodeDeposit(
+    provider: ContractProvider,
+    sender: Sender,
+    value: bigint
+  ) {
+    const msgBody = beginCell().endCell();
+    await provider.internal(sender, {
+      value,
+      sendMode: SendMode.PAY_GAS_SEPARATELY,
+      body: msgBody,
+    });
+  }
+
   async getData(provider: ContractProvider) {
     const { stack } = await provider.get("get_contract_data", []);
     return {
