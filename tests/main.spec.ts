@@ -1,24 +1,31 @@
 import { Cell, fromNano, toNano } from "@ton/core";
 import { hex } from "../build/main.compiled.json";
-import { Blockchain } from "@ton/sandbox";
+import { Blockchain, SandboxContract, TreasuryContract } from "@ton/sandbox";
 import { MainContract } from "../wrappers/MainContract";
 import "@ton/test-utils";
 
 describe("main.fc contract tests", () => {
-  it("should get the proper most recent sender address + counter", async () => {
-    const blockchain = await Blockchain.create();
+  let blockchain: Blockchain;
+  let ownerWallet: SandboxContract<TreasuryContract>;
+  let initWallet: SandboxContract<TreasuryContract>;
+  let myContract: SandboxContract<MainContract>;
+  beforeEach(async () => {
+    blockchain = await Blockchain.create();
     const codeCell = Cell.fromBoc(Buffer.from(hex, "hex"))[0];
-    const treasury = await blockchain.treasury("initial-treasury");
-    const myContract = blockchain.openContract(
+    ownerWallet = await blockchain.treasury("owner-wallet");
+    initWallet = await blockchain.treasury("initWallet");
+    myContract = blockchain.openContract(
       MainContract.createFromConfig(
         {
           initialCounterValue: 0,
-          senderAddress: treasury.address,
-          ownerAddress: treasury.address,
+          senderAddress: initWallet.address,
+          ownerAddress: ownerWallet.address,
         },
         codeCell
       )
     );
+  });
+  it("should get the proper most recent sender address + counter", async () => {
     const value = toNano("0.05");
     const senderWallet = await blockchain.treasury("sender");
     const sentMessageResult = await myContract.sendIncrement(
@@ -55,19 +62,6 @@ describe("main.fc contract tests", () => {
     expect(data2.counter).toEqual(8);
   });
   it("should be able to deposit and withdraw funds", async () => {
-    const blockchain = await Blockchain.create();
-    const codeCell = Cell.fromBoc(Buffer.from(hex, "hex"))[0];
-    const treasury = await blockchain.treasury("initial-treasury");
-    const myContract = blockchain.openContract(
-      MainContract.createFromConfig(
-        {
-          initialCounterValue: 0,
-          senderAddress: treasury.address,
-          ownerAddress: treasury.address,
-        },
-        codeCell
-      )
-    );
     const value = toNano("1.5");
     const senderWallet = await blockchain.treasury("sender");
     const sentMessageResult = await myContract.sendFundsDepost(
@@ -83,12 +77,12 @@ describe("main.fc contract tests", () => {
     expect(balance).toBeGreaterThanOrEqual(Number(value) * 0.99);
     const withdrawalAmount = 0.5;
     const sentMessageResult2 = await myContract.sendWithdraw(
-      treasury.getSender(),
+      ownerWallet.getSender(),
       toNano("0.01"),
       toNano(withdrawalAmount)
     );
     expect(sentMessageResult2.transactions).toHaveTransaction({
-      from: treasury.address,
+      from: ownerWallet.address,
       to: myContract.address,
       success: true,
     });
