@@ -18,8 +18,8 @@ async function deployScript() {
 
   const codeCell = Cell.fromBoc(Buffer.from(hex, "hex"))[0];
   const dataCell = beginCell()
-    .storeAddress(null) // Initial empty address
     .storeUint(0, 32) // Initial total = 0
+    .storeAddress(null) // Initial empty address
     .endCell();
 
   const stateInit: StateInit = {

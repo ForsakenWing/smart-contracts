@@ -7,7 +7,7 @@ import qrcode from "qrcode-terminal";
 
 async function onchainTestScript() {
   const codeCell = Cell.fromBoc(Buffer.from(hex, "hex"))[0];
-  const dataCell = beginCell().storeAddress(null).storeUint(0, 32).endCell();
+  const dataCell = beginCell().storeUint(0, 32).storeAddress(null).endCell();
   const address = contractAddress(0, {
     code: codeCell,
     data: dataCell,
